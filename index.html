@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://cdn.bootcdn.net/ajax/libs/socket.io/2.3.1/socket.io.min.js"></script>
+</head>
+<body>
+  <script>
+
+    const socket = io('ws://localhost:3000', {
+      // transports: ['websocket']
+    });
+    socket.on('connect', () => {
+      socket.emit('join', {
+        header: {
+          accesstoken: '0f3a5eea-7fb1-4234-8ffa-6b9f1d4476a7',
+          room: 1
+        }
+      });
+
+      setTimeout(() => {
+        socket.emit('join', {
+          header: {
+            accesstoken: 'da15b7d3-8557-4291-9026-c2825c11426e',
+            room: 1
+          }
+        });
+      }, 5000)
+    });
+    socket.on('joined', (data) => {
+      socket.emit('send', {
+        header: data.header,
+        body: {
+          message: `${data.header.accesstoken} 加入 ${data.header.room}`
+        }
+      });
+    })
+    socket.on('receive', (data) => {
+      console.log(data)
+    })
+  </script>
+</body>
+</html>
