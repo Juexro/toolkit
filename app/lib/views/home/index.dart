@@ -1,30 +1,27 @@
+import 'package:app/views/home/chat/chat.dart';
 import 'package:flutter/material.dart';
 import 'mine/mine.dart';
 
 class HomeMenu extends StatefulWidget {
-  HomeMenu({this.currentTab});
-  final int currentTab;
-
   @override
-  _HomePageState createState() => _HomePageState(currentTab: currentTab);
+  _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomeMenu> {
-  _HomePageState({@required this.currentTab});
   int currentTab = 0;
+
   final List<Widget> children = [
-    Text('首页'),
+    ChatPage(),
     MinePage(),
   ];
 
   final List<BottomNavigationBarItem> menus = [
-    BottomNavigationBarItem(icon: Icon(Icons.home), label: '首页'),
+    BottomNavigationBarItem(icon: Icon(Icons.message), label: '消息'),
     BottomNavigationBarItem(icon: Icon(Icons.person), label: '我的'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    print(currentTab);
     return Scaffold(
       body: children[currentTab],
       bottomNavigationBar: BottomNavigationBar(

@@ -1,5 +1,3 @@
-import 'package:app/config/application.dart';
-import 'package:fluro/fluro.dart';
 import 'package:flutter/material.dart';
 
 class MinePage extends StatelessWidget {
