@@ -9,37 +9,48 @@
 <body>
   <script>
 
-    const socket = io('ws://localhost:3000', {
-      // transports: ['websocket']
-    });
-    socket.on('connect', () => {
-      socket.emit('join', {
+    const user1 = io('ws://localhost:3000');
+    user1.on('connect', () => {
+      user1.emit('join', {
         header: {
           accesstoken: '0f3a5eea-7fb1-4234-8ffa-6b9f1d4476a7',
           room: 1
-        }
+        },
+        body: {}
       });
+    });
+    user1.on('joined', (data) => {
+      console.log(`用户1 会话`, `${data.body.data}`);
+    })
+    user1.on('receive', (data) => {
+      console.log(`用户1 接收消息`, data.header.type, data.body.data.messages)
+    });
 
+    const user2 = io('http://localhost:3000');
+    user2.on('connect', () => {
       setTimeout(() => {
-        socket.emit('join', {
+        user2.emit('join', {
           header: {
             accesstoken: 'da15b7d3-8557-4291-9026-c2825c11426e',
             room: 1
-          }
+          },
+          body: {}
         });
       }, 5000)
     });
-    socket.on('joined', (data) => {
-      socket.emit('send', {
-        header: data.header,
-        body: {
-          message: `${data.header.accesstoken} 加入 ${data.header.room}`
-        }
+    user2.on('joined', (data) => {
+      console.log(`用户2 会话`, `${data.body.data}`);
+      console.log(`用户2 发送 测试消息2`);
+      user2.emit('send', {
+          header: data.header,
+          body: {
+            message: `测试消息2`
+          }
       });
-    })
-    socket.on('receive', (data) => {
-      console.log(data)
-    })
+    });
+    user2.on('receive', (data) => {
+      console.log(`用户2 接收消息`, data.header.type, data.body.data.messages)
+    });
   </script>
 </body>
 </html>

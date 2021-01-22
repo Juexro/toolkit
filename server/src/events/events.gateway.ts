@@ -4,22 +4,9 @@ import { Server } from 'socket.io';
 import { ChatRoomService } from 'src/chat-room/chat-room.service';
 import { AuthGuard } from 'src/guards/auth.guard';
 import { EventsService } from './events.service';
-
-export interface RoomScheduleOptions {
-  tasks: number;
-  messageId: number | string;
-  accesstoken: number | string;
-}
-
-export interface RoomScheduleMap {
-  [name: string]: RoomScheduleOptions[];
-}
-
 @WebSocketGateway()
 export class EventsGateway {
-  private readonly maxTasks = 5;
   private connectionMap = {};
-  private roomScheduleMap: RoomScheduleMap = {};
   
   public server: Server;
   constructor(
@@ -32,62 +19,10 @@ export class EventsGateway {
     this.eventsService.server = server;
   }
 
-  push(name: string, options: RoomScheduleOptions) {
-    let startLoop = false;
-    if (!this.roomScheduleMap[name]) {
-      this.roomScheduleMap[name] = [];
-      startLoop = true;
-    }
-    const last = this.roomScheduleMap[name].slice(-1)[0];
-    if (last) {
-      if (last.tasks > this.maxTasks) {
-        this.roomScheduleMap[name].push(options);
-      } else {
-        last.tasks ++;
-        if (last.messageId > options.messageId) {
-          last.messageId = options.messageId;
-        }
-      }
-    } else {
-      this.roomScheduleMap[name].push(options);
-    }
-    startLoop && this.loop(name);
-  }
-
-  delete(name: string) {
-    delete this.roomScheduleMap[name];
-  }
-
-  async loop(name: string) {
-    if (this.roomScheduleMap[name].length === 0) {
-      this.delete(name);
-      return;
-    }
-
-    const { messageId, accesstoken} = this.roomScheduleMap[name].shift();
-    const data = await this.chatRoomService.getMessage(name, {
-      lastMessageId: messageId || -1
-    });
-
-    this.server.to(accesstoken + '').emit('receive', {
-      header: {
-        room: name,
-        accesstoken
-      },
-      body: {
-        data,
-        code: 0,
-        message: ''
-      }
-    });
-
-    this.loop(name);
-  }
-
   @UseGuards(AuthGuard)
   @SubscribeMessage('join')
   async join(client: any, payload: any) {
-    const { header: { room, accesstoken } } = payload;
+    const { header: { room, accesstoken }, body: { lastMessageId } } = payload;
     const roomName = accesstoken;
     if (!this.connectionMap[client.id]) {
       this.connectionMap[client.id] = roomName;
@@ -97,25 +32,36 @@ export class EventsGateway {
         client.leaveAll();
       });
     }
-    client.join(roomName);
-
-    this.push(room, {
-      tasks: 1,
-      messageId: -1,
-      accesstoken
-    });
+    client.join(room);
     
-    this.server.to(roomName).emit('joined', {
+    this.server.to(room).emit('joined', {
       header: {
         room,
         accesstoken
       },
       body: {
-        data: true,
+        data: `${accesstoken} 加入房间`,
         code: 0,
         message: ''
       }
     });
+
+    const data = await this.chatRoomService.getMessage(room, {
+      lastMessageId: lastMessageId || -1
+    });
+
+    this.server.to(client.id).emit('receive', {
+      header: {
+        room,
+        type: 'history',
+        accesstoken
+      },
+      body: {
+        data,
+        code: 0,
+        message: ''
+      }
+    }); 
   }
 
   @UseGuards(AuthGuard)
@@ -127,10 +73,20 @@ export class EventsGateway {
       message
     });
 
-    this.push(room, {
-      tasks: 1,
-      messageId: msg.id - 1,
-      accesstoken
-    });
+    this.server.to(room).emit('receive', {
+      header: {
+        room,
+        type: 'message',
+        accesstoken
+      },
+      body: {
+        data: {
+          messages: [msg],
+          count: 1
+        },
+        code: 0,
+        message: ''
+      }
+    }); 
   }
 }
