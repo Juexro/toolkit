@@ -11,7 +11,7 @@ export class Message {
   message: string;
 
   @CreateDateColumn()
-  createAt: string;
+  create_time: string;
 
   @ManyToMany(type => User, user => user.rooms)
   members: string[];

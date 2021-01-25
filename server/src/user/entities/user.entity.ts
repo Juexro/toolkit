@@ -3,12 +3,8 @@ import { Entity, Column, PrimaryGeneratedColumn, ManyToMany, JoinTable, Generate
 
 @Entity()
 export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
-  
-  @Column()
-  @Generated('uuid')
-  uuid: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
   name: string;
